@@ -1,22 +1,8 @@
 use ariadne::{Label, Report, ReportKind, Source};
 use chumsky::prelude::*;
 
-fn main() {
-    let filename = std::env::args().nth(1).unwrap();
-    let template = std::fs::read_to_string(&filename).unwrap();
-
-    let mut stdout = std::io::stdout().lock();
-    format(
-        &mut stdout,
-        &filename,
-        &template,
-        "Hello, world! This is a longer prompt to see if word-wrapping is working correctly.",
-    )
-    .unwrap();
-}
-
 #[derive(Debug, Clone)]
-enum Token {
+pub enum Token {
     Comment(String),
     Text(String),
     Thoughts,
@@ -24,104 +10,7 @@ enum Token {
     Eye(u8),
 }
 
-// TODO: make this configurable
-const THOUGHT: &'static str = "\\";
-const TONGUE: &'static str = "  ";
-const LEFT_EYE: &'static str = "o";
-const RIGHT_EYE: &'static str = "o";
-const PRINT_WIDTH: usize = 40;
-
-#[derive(Clone, Copy)]
-enum SpeechMode {
-    Say,
-    Think,
-}
-
-fn bubble_top<W>(out: &mut W, width: usize) -> Result<(), std::io::Error>
-where
-    W: std::io::Write,
-{
-    write!(out, " ")?;
-    for _ in 0..(width + 2) {
-        write!(out, "_")?;
-    }
-    write!(out, "\n")?;
-    Ok(())
-}
-
-fn bubble_bottom<W>(out: &mut W, width: usize) -> Result<(), std::io::Error>
-where
-    W: std::io::Write,
-{
-    write!(out, " ")?;
-    for _ in 0..(width + 2) {
-        write!(out, "-")?;
-    }
-    write!(out, "\n")?;
-    Ok(())
-}
-
-fn format<W>(
-    out: &mut W,
-    filename: &str,
-    template: &str,
-    text: &str,
-    // TODO: better error handling
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    W: std::io::Write,
-{
-    let lines = textwrap::wrap(text, PRINT_WIDTH);
-    let width = lines
-        .iter()
-        .map(|s| s.chars().count())
-        .max()
-        .expect("always at least 1 line");
-    let single_line = lines.len() == 1;
-    bubble_top(out, width)?;
-    for (index, line) in lines.iter().enumerate() {
-        // TODO: make this configurable - thoughts are always ( / )
-        let (bubble_left, bubble_right) = if single_line {
-            ('<', '>')
-        } else if index == 0 {
-            ('/', '\\')
-        } else if index == lines.len() - 1 {
-            ('\\', '/')
-        } else {
-            ('|', '|')
-        };
-        write!(out, "{} ", bubble_left)?;
-        write!(out, "{}", line)?;
-        for _ in 0..(width - line.chars().count()) {
-            write!(out, " ")?;
-        }
-        write!(out, " {}\n", bubble_right)?;
-    }
-    bubble_bottom(out, width)?;
-
-    let mut left_eye = true;
-    for token in parse(filename, template).map_err(|_| "failed to parse")? {
-        // TODO: buffer writes?
-        match token {
-            Token::Comment(_) => {}
-            Token::Text(text) => write!(out, "{}", text)?,
-            Token::Thoughts => write!(out, "{}", THOUGHT)?,
-            Token::Tongue => write!(out, "{}", TONGUE)?,
-            Token::Eye(mut n) => loop {
-                write!(out, "{}", if left_eye { LEFT_EYE } else { RIGHT_EYE })?;
-                left_eye = !left_eye;
-                n -= 1;
-                if n == 0 {
-                    break;
-                }
-            },
-        }
-    }
-
-    Ok(())
-}
-
-fn parse(filename: &str, template: &str) -> Result<Vec<Token>, ()> {
+pub fn parse(filename: &str, template: &str) -> Result<Vec<Token>, ()> {
     return match tokenizer().parse(template) {
         Ok(tokens) => Ok(tokens),
         Err(errors) => {
