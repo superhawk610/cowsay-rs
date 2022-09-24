@@ -17,12 +17,7 @@ pub fn parse(filename: &str, template: &str) -> Result<Vec<Token>, ()> {
             let mut report =
                 Report::build(ReportKind::Error, filename, 0).with_message("Error parsing cowfile");
             report.add_labels(errors.iter().map(|error| {
-                Label::new((filename, error.span())).with_message(format!(
-                    "{:?} / expected {:?} / found {:?}",
-                    error.reason(),
-                    error.expected().map(|c| *c).collect::<Option<String>>(),
-                    error.found()
-                ))
+                Label::new((filename, error.span())).with_message(format!("{}", error))
             }));
             report
                 .finish()
