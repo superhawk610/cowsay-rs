@@ -10,11 +10,10 @@ pub enum Token {
     Eye(u8),
 }
 
-pub fn parse(template: &str) -> Result<Vec<Token>, ()> {
+pub fn parse(filename: &str, template: &str) -> Result<Vec<Token>, ()> {
     return match tokenizer().parse(template) {
         Ok(tokens) => Ok(tokens),
         Err(errors) => {
-            let filename = "cowfile.cow";
             let mut report =
                 Report::build(ReportKind::Error, filename, 0).with_message("Error parsing cowfile");
             report.add_labels(errors.iter().map(|error| {
@@ -80,10 +79,16 @@ fn tokenizer() -> impl Parser<char, Vec<Token>, Error = Simple<char>> {
         just("\\$").to(Token::Text("$".to_string())),
         just('\\').to(Token::Text("\\".to_string())),
         just('$').to(Token::Text("$".to_string())),
+        // TODO: there's gotta be a simpler way to do this
         just('E')
             .then_ignore(none_of("O").rewind())
-            .then_ignore(none_of("C").rewind())
             .to(Token::Text("E".to_string())),
+        just("EO")
+            .then_ignore(none_of("C").rewind())
+            .to(Token::Text("EO".to_string())),
+        just("EOC")
+            .then_ignore(none_of("\n").rewind())
+            .to(Token::Text("EOC".to_string())),
         // if no keywords match, continue iterating until encountering a character
         // that _might_ start a keyword, or end the input; this means that the output
         // may contain runs of `Token::Text` delimited by `$` or `E`, but that's fine

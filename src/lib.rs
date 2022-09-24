@@ -25,6 +25,9 @@ pub struct Options {
     /// Cow template to use when rendering
     template: String,
 
+    /// Cowfile template filename
+    filename: String,
+
     /// Text for cow to think/speak
     text: String,
 }
@@ -84,7 +87,7 @@ pub fn format<W: Write>(out: &mut W, opts: &Options) -> Result<(), Box<dyn std::
     bubble_bottom(out, width)?;
 
     let mut left_eye = true;
-    for token in parse::parse(&opts.template).map_err(|_| "failed to parse")? {
+    for token in parse::parse(&opts.filename, &opts.template).map_err(|_| "failed to parse")? {
         match token {
             Token::Comment(_) => {}
             Token::Text(text) => write!(out, "{}", text)?,

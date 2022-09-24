@@ -19,6 +19,8 @@ fn main() {
         args.cowfile = random_cowfile();
     }
 
+    let (name, template) = load_cowfile(&args.cowfile).unwrap();
+
     let opts = OptionsBuilder::default()
         .word_wrap(!args.disable_wrap)
         .print_width(args.max_width)
@@ -28,7 +30,8 @@ fn main() {
         ])
         .tongue(args.tongue_string)
         .thought(args.think)
-        .template(load_cowfile(&args.cowfile).unwrap().to_string())
+        .filename(name)
+        .template(template.to_string())
         .text(join(args.text, " "))
         .build()
         .unwrap();
@@ -64,17 +67,21 @@ fn random_cowfile() -> String {
         .to_string()
 }
 
-fn load_cowfile(name: &str) -> Result<Cow<str>, &'static str> {
+fn load_cowfile(name: &str) -> Result<(String, Cow<str>), &'static str> {
     // cowfile may specify a filesystem path
     if name.contains(std::path::MAIN_SEPARATOR) {
-        return std::fs::read_to_string(name)
+        let name = name.to_string();
+        let contents = std::fs::read_to_string(&name)
             .map(|s| Cow::Owned(s))
-            .map_err(|_| "cannot find cowfile");
+            .map_err(|_| "cannot find cowfile")?;
+        return Ok((name, contents));
     }
 
-    BUILTIN_COWS
-        .get_file(format!("{}.cow", name))
+    let name = format!("{}.cow", name);
+    let contents = BUILTIN_COWS
+        .get_file(&name)
         .and_then(|f| f.contents_utf8())
         .map(|s| Cow::Borrowed(s))
-        .ok_or("")
+        .ok_or("unable to read built-in cowfile")?;
+    Ok((name, contents))
 }
