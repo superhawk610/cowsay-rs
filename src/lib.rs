@@ -52,10 +52,16 @@ fn bubble_bottom<W: Write>(out: &mut W, width: usize) -> Result<(), std::io::Err
 
 // TODO: better error handling
 pub fn format<W: Write>(out: &mut W, opts: &Options) -> Result<(), Box<dyn std::error::Error>> {
+    // Tab characters are control characters when printed to a terminal, and display
+    // as a variable-width space (that may shrink to accomodate previous text on the
+    // same line, though this behaviour varies from one shell to the next). In order
+    // to reliably determine a line's width, replace tabs with a known # of spaces.
+    let text = opts.text.replace("\t", "    ");
+
     let lines = if opts.word_wrap {
-        textwrap::wrap(&opts.text, opts.print_width)
+        textwrap::wrap(&text, opts.print_width)
     } else {
-        vec![Cow::Borrowed(opts.text.as_ref())]
+        vec![Cow::Owned(text)]
     };
     let width = lines
         .iter()
