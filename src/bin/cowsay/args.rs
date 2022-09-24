@@ -103,7 +103,16 @@ pub fn parse() -> Args {
         args.tongue_string = "  ".to_string();
     }
 
-    if args.text.is_empty() {
+    if args.tongue_string.chars().count() != 2 || args.eye_string.chars().count() != 2 {
+        Args::command()
+            .error(
+                clap::ErrorKind::InvalidValue,
+                "<tongue_string> and <eye_string> must be exactly two UTF-8 characters",
+            )
+            .exit();
+    }
+
+    if !args.list && args.text.is_empty() {
         // if no text is provided and the user didn't provide anything
         // on stdin, attempting to read from stdin will block the process
         // and provide the user with a TTY to enter input; we'd instead

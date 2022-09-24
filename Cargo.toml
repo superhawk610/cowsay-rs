@@ -10,5 +10,7 @@ atty = "0.2.14"
 chumsky = "0.8.0"
 clap = { version = "3.2.22", features = ["derive"] }
 derive_builder = "0.11.2"
+include_dir = "0.7.2"
 itertools = "0.10.5"
+rand = "0.8.5"
 textwrap = "0.15.1"
